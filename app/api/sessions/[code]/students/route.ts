@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { students, sessions, queueEntries } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { students, sessions } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { requireTeacher } from "@/lib/auth";
 import { importStudentsSchema } from "@/lib/validators";
 
@@ -96,4 +96,19 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: "导入失败" }, { status: 500 });
   }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  const { code } = await params;
+  const auth = await requireTeacher(code.toUpperCase());
+  if (!auth) {
+    return NextResponse.json({ error: "未授权" }, { status: 401 });
+  }
+
+  await db.delete(students).where(eq(students.sessionId, auth.sessionId));
+
+  return NextResponse.json({ success: true });
 }

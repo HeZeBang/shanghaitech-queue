@@ -37,11 +37,13 @@ export function StudentQueueList({
   isLoading,
   code,
   onUpdate,
+  on401,
 }: {
   queue?: QueueEntry[];
   isLoading: boolean;
   code: string;
   onUpdate: () => void;
+  on401?: () => void;
 }) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -56,6 +58,7 @@ export function StudentQueueList({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      if (res.status === 401) { on401?.(); return; }
       if (!res.ok) {
         const data = await res.json();
         toast.error(data.error || "操作失败");
@@ -75,6 +78,7 @@ export function StudentQueueList({
       const res = await fetch(`/api/sessions/${code}/queue/${id}`, {
         method: "DELETE",
       });
+      if (res.status === 401) { on401?.(); return; }
       if (!res.ok) {
         toast.error("移除失败");
         return;

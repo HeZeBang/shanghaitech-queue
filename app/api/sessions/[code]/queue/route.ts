@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { queueEntries, students, sessions } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { joinQueueSchema } from "@/lib/validators";
+import { requireTeacher } from "@/lib/auth";
 
 export async function GET(
   _request: Request,
@@ -138,4 +139,21 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: "加入排队失败" }, { status: 500 });
   }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  const { code } = await params;
+  const auth = await requireTeacher(code.toUpperCase());
+  if (!auth) {
+    return NextResponse.json({ error: "未授权" }, { status: 401 });
+  }
+
+  await db
+    .delete(queueEntries)
+    .where(eq(queueEntries.sessionId, auth.sessionId));
+
+  return NextResponse.json({ success: true });
 }

@@ -23,18 +23,58 @@ interface Student {
   email: string | null;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+interface QueueEntry {
+  id: string;
+  studentId: string;
+  status: "waiting" | "checking" | "done" | "absent";
+}
+
+const statusLabels: Record<string, string> = {
+  waiting: "等待中",
+  checking: "检查中",
+  done: "已完成",
+  absent: "缺席",
+};
+
+const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  waiting: "outline",
+  checking: "default",
+  done: "secondary",
+  absent: "destructive",
+};
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (res.status === 401) {
+    const err = new Error("未授权");
+    (err as unknown as Record<string, number>).status = 401;
+    throw err;
+  }
+  return res.json();
+};
 
 export function RosterTable({
   code,
   onQueueChange,
+  on401,
 }: {
   code: string;
   onQueueChange?: () => void;
+  on401?: () => void;
 }) {
   const { data, isLoading, mutate } = useSWR<Student[]>(
     `/api/sessions/${code}/students`,
-    fetcher
+    fetcher,
+    {
+      onError: (err: Error & { status?: number }) => {
+        if (err.status === 401) on401?.();
+      },
+    }
+  );
+  const { data: queue } = useSWR<QueueEntry[]>(
+    `/api/sessions/${code}/queue`,
+    fetcher,
+    { refreshInterval: 3000 }
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: "", email: "", studentId: "" });
@@ -61,6 +101,7 @@ export function RosterTable({
           studentId: editForm.studentId,
         }),
       });
+      if (res.status === 401) { on401?.(); return; }
       if (!res.ok) {
         const data = await res.json();
         toast.error(data.error || "保存失败");
@@ -83,6 +124,7 @@ export function RosterTable({
       const res = await fetch(`/api/sessions/${code}/students/${id}`, {
         method: "DELETE",
       });
+      if (res.status === 401) { on401?.(); return; }
       if (!res.ok) {
         toast.error("删除失败");
         return;
@@ -104,6 +146,7 @@ export function RosterTable({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
+      if (res.status === 401) { on401?.(); return; }
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error || "操作失败");
@@ -129,12 +172,19 @@ export function RosterTable({
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-8">
         暂无学生名单，请点击&quot;导入名单&quot;添加
       </p>
     );
+  }
+
+  const queueByStudentId = new Map<string, string>();
+  if (queue) {
+    for (const entry of queue) {
+      queueByStudentId.set(entry.studentId, entry.status);
+    }
   }
 
   return (
@@ -144,6 +194,7 @@ export function RosterTable({
           <TableRow>
             <TableHead>学号</TableHead>
             <TableHead>姓名</TableHead>
+            <TableHead>状态</TableHead>
             <TableHead>邮箱</TableHead>
             <TableHead className="text-right">操作</TableHead>
           </TableRow>
@@ -170,6 +221,16 @@ export function RosterTable({
                       }
                       className="h-8"
                     />
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const s = queueByStudentId.get(editForm.studentId);
+                      return s ? (
+                        <Badge variant={statusVariants[s]}>{statusLabels[s]}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">未排队</span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Input
@@ -204,6 +265,16 @@ export function RosterTable({
                 <>
                   <TableCell className="font-mono">{student.studentId}</TableCell>
                   <TableCell>{student.name}</TableCell>
+                  <TableCell>
+                    {(() => {
+                      const s = queueByStudentId.get(student.studentId);
+                      return s ? (
+                        <Badge variant={statusVariants[s]}>{statusLabels[s]}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">未排队</span>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {student.email || "-"}
                   </TableCell>

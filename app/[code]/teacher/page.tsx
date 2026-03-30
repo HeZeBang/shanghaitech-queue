@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,18 @@ export default function TeacherDashboard({
   const [cloneName, setCloneName] = useState("");
   const [clonePin, setClonePin] = useState("");
   const [cloning, setCloning] = useState(false);
+
+  const handle401 = useCallback(
+    (res: Response) => {
+      if (res.status === 401) {
+        toast.error("登录已过期，请重新登录");
+        router.push(`/${code}/teacher/login`);
+        return true;
+      }
+      return false;
+    },
+    [code, router]
+  );
 
   async function handleCloseSession() {
     if (!confirm("确定要关闭课堂吗？关闭后学生将无法加入排队。")) return;
@@ -114,6 +126,38 @@ export default function TeacherDashboard({
       toast.error("网络错误");
     } finally {
       setCloning(false);
+    }
+  }
+
+  async function handleClearQueue() {
+    if (!confirm("确定清空所有队列记录？此操作不可恢复。")) return;
+    try {
+      const res = await fetch(`/api/sessions/${code}/queue`, { method: "DELETE" });
+      if (handle401(res)) return;
+      if (!res.ok) {
+        toast.error("清空失败");
+        return;
+      }
+      toast.success("队列已清空");
+      mutateQueue();
+    } catch {
+      toast.error("网络错误");
+    }
+  }
+
+  async function handleClearRoster() {
+    if (!confirm("确定清空所有学生名单？关联的队列记录也会被删除。此操作不可恢复。")) return;
+    try {
+      const res = await fetch(`/api/sessions/${code}/students`, { method: "DELETE" });
+      if (handle401(res)) return;
+      if (!res.ok) {
+        toast.error("清空失败");
+        return;
+      }
+      toast.success("名单已清空");
+      mutateQueue();
+    } catch {
+      toast.error("网络错误");
     }
   }
 
@@ -247,20 +291,44 @@ export default function TeacherDashboard({
           <TabsTrigger value="roster">学生名单</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="queue" className="mt-4">
+        <TabsContent value="queue" className="mt-4 space-y-4">
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => mutateQueue()}>
+              刷新
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearQueue}
+              disabled={!queue || queue.length === 0}
+            >
+              清空队列
+            </Button>
+          </div>
           <StudentQueueList
             queue={queue}
             isLoading={queueLoading}
             code={code}
             onUpdate={() => mutateQueue()}
+            on401={() => { toast.error("登录已过期，请重新登录"); router.push(`/${code}/teacher/login`); }}
           />
         </TabsContent>
 
         <TabsContent value="roster" className="mt-4 space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <RosterImportDialog code={code} onImported={() => mutateQueue()} />
+            <Button variant="outline" size="sm" onClick={() => mutateQueue()}>
+              刷新
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearRoster}
+            >
+              清空名单
+            </Button>
           </div>
-          <RosterTable code={code} onQueueChange={() => mutateQueue()} />
+          <RosterTable code={code} onQueueChange={() => mutateQueue()} on401={() => { toast.error("登录已过期，请重新登录"); router.push(`/${code}/teacher/login`); }} />
         </TabsContent>
       </Tabs>
     </div>
