@@ -100,7 +100,7 @@ export function QueuePositionCard({
         )}
         {entry.status === "checking" && (
           <p className="text-center text-blue-500 font-medium animate-pulse">
-            正在检查中，请准备好...
+            即将检查中，请准备好...
           </p>
         )}
         {entry.status === "done" && (

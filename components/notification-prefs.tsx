@@ -66,7 +66,7 @@ export function NotificationPrefs({
           </Button>
         ))}
         <p className="text-xs text-muted-foreground pt-1">
-          部分浏览器（如 iOS Safari）可能不支持网页通知。开启后请勿关闭此页面。
+          部分浏览器（如 iOS Safari）可能不支持网页通知或需开启通知权限。开启后最好请勿关闭此页面。
         </p>
       </CardContent>
     </Card>

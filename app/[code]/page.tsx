@@ -91,7 +91,7 @@ export default function StudentPage({
       prevStatusRef.current === "waiting" &&
       myEntry.status === "checking"
     ) {
-      notify("checking", "开始检查", "老师正在检查你的内容，请注意");
+      notify("checking", "开始检查", "老师即将检查你的内容，请注意");
     }
 
     prevStatusRef.current = myEntry.status;
