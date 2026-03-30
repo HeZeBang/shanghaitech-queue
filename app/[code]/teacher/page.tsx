@@ -204,6 +204,11 @@ export default function TeacherDashboard({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
+          <Link href={`/${code}/display`} target="_blank">
+            <Button variant="outline" size="sm">
+              大屏模式
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" onClick={handleExport}>
             导出 CSV
           </Button>

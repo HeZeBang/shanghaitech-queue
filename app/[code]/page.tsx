@@ -267,7 +267,14 @@ export default function StudentPage({
 
         <Separator />
 
-        <div className="text-center">
+        <div className="text-center space-x-4">
+          <Link
+            href={`/${code}/display`}
+            target="_blank"
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            大屏模式
+          </Link>
           <Link
             href={`/${code}/teacher/login`}
             className="text-sm text-muted-foreground hover:underline"
