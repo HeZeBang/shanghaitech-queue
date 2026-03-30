@@ -42,6 +42,7 @@ export default function StudentPage({
 
   const [studentId, setStudentId] = useState("");
   const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
 
   // Track previous ahead count to detect transitions
@@ -135,6 +136,38 @@ export default function StudentPage({
     }
   }
 
+  async function handleCancelQueue() {
+    if (!myEntry || !entryId) return;
+
+    setLeaving(true);
+    try {
+      const res = await fetch(`/api/sessions/${code}/queue/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entryId,
+          studentId: myEntry.studentId,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "取消排队失败");
+        return;
+      }
+
+      setEntryId(null);
+      localStorage.removeItem(`queue_entry_${code}`);
+      resetNotified();
+      toast.success("已取消排队");
+      mutate();
+    } catch {
+      toast.error("网络错误");
+    } finally {
+      setLeaving(false);
+    }
+  }
+
   if (sessionLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
@@ -181,6 +214,16 @@ export default function StudentPage({
         {myEntry ? (
           <>
             <QueuePositionCard entry={myEntry} queue={queue || []} stats={stats} />
+            {myEntry.status === "waiting" && (
+              <Button
+                variant="destructive"
+                onClick={handleCancelQueue}
+                disabled={leaving}
+                className="w-full"
+              >
+                {leaving ? "取消中..." : "取消排队"}
+              </Button>
+            )}
             {myEntry.status === "waiting" && (
               <NotificationPrefs
                 supported={supported}

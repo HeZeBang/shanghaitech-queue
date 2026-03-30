@@ -22,6 +22,11 @@ export const updateQueueSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+export const cancelQueueSchema = z.object({
+  entryId: z.string().uuid("无效的排队记录 ID"),
+  studentId: z.string().min(1, "请输入学号").max(64),
+});
+
 export const importStudentsSchema = z.object({
   students: z
     .array(
