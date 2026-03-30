@@ -158,15 +158,14 @@ export function StudentQueueList({
                       </Button>
                     </>
                   )}
-                  {(entry.status === "waiting" ||
-                    entry.status === "checking") && (
+                  {(
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="destructive"
                       disabled={loading === entry.id}
                       onClick={() => removeEntry(entry.id)}
                     >
-                      移除
+                      移除记录
                     </Button>
                   )}
                 </div>

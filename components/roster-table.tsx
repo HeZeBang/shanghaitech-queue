@@ -211,14 +211,6 @@ export function RosterTable({
                     <div className="flex gap-1 justify-end flex-wrap">
                       <Button
                         size="sm"
-                        variant="outline"
-                        disabled={loading === student.id}
-                        onClick={() => startEdit(student)}
-                      >
-                        编辑
-                      </Button>
-                      <Button
-                        size="sm"
                         variant="default"
                         disabled={loading === student.id}
                         onClick={() => handleAction(student.id, "checking")}
@@ -241,13 +233,22 @@ export function RosterTable({
                       >
                         缺席
                       </Button>
+                      <div className="mx-1 w-px h-6 bg-muted" />
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
+                        disabled={loading === student.id}
+                        onClick={() => startEdit(student)}
+                      >
+                        编辑信息
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
                         disabled={loading === student.id}
                         onClick={() => deleteStudent(student.id)}
                       >
-                        删除
+                        删除学生
                       </Button>
                     </div>
                   </TableCell>
