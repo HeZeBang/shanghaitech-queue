@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { students, sessions } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { students, sessions, queueEntries } from "@/db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { requireTeacher } from "@/lib/auth";
 import { importStudentsSchema } from "@/lib/validators";
 

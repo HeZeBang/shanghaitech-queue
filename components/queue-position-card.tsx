@@ -64,15 +64,37 @@ export function QueuePositionCard({
         </div>
         {entry.status === "waiting" && (
           <>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">前方等待人数</span>
-              <span className="font-bold">{aheadCount} 人</span>
-            </div>
-            {personalWait !== null && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">预估等待时间</span>
-                <span className="font-bold">{formatTime(personalWait)}</span>
+            {aheadCount === 0 ? (
+              <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-3 text-center">
+                <p className="text-green-500 font-bold text-lg">轮到你了！</p>
+                <p className="text-green-500/80 text-sm mt-1">请做好准备，即将开始检查</p>
               </div>
+            ) : aheadCount <= 3 ? (
+              <>
+                <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 text-center">
+                  <p className="text-yellow-500 font-bold">队列畅通</p>
+                  <p className="text-yellow-500/80 text-sm mt-1">前方仅 {aheadCount} 人，请提前准备</p>
+                </div>
+                {personalWait !== null && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">预估等待时间</span>
+                    <span className="font-bold">{formatTime(personalWait)}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">前方等待人数</span>
+                  <span className="font-bold">{aheadCount} 人</span>
+                </div>
+                {personalWait !== null && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">预估等待时间</span>
+                    <span className="font-bold">{formatTime(personalWait)}</span>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
