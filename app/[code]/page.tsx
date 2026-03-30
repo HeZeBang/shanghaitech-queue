@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -16,8 +16,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/use-session";
 import { useQueuePolling, useStatsPolling } from "@/hooks/use-queue-polling";
+import { useNotifications } from "@/hooks/use-notifications";
 import { QueueStatusCard } from "@/components/queue-status-card";
 import { QueuePositionCard } from "@/components/queue-position-card";
+import { NotificationPrefs } from "@/components/notification-prefs";
 import { toast } from "sonner";
 
 export default function StudentPage({
@@ -29,10 +31,22 @@ export default function StudentPage({
   const { session, isLoading: sessionLoading } = useSession(code);
   const { queue, isLoading: queueLoading, mutate } = useQueuePolling(code);
   const { stats, isLoading: statsLoading } = useStatsPolling(code);
+  const {
+    supported,
+    permission,
+    prefs,
+    togglePref,
+    notify,
+    resetNotified,
+  } = useNotifications(code);
 
   const [studentId, setStudentId] = useState("");
   const [joining, setJoining] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
+
+  // Track previous ahead count to detect transitions
+  const prevAheadRef = useRef<number | null>(null);
+  const prevStatusRef = useRef<string | null>(null);
 
   // Restore entryId from localStorage
   useEffect(() => {
@@ -41,6 +55,47 @@ export default function StudentPage({
   }, [code]);
 
   const myEntry = queue?.find((e) => e.id === entryId);
+
+  // Notification trigger logic
+  useEffect(() => {
+    if (!myEntry || myEntry.status !== "waiting" || !queue) return;
+
+    const aheadCount = queue.filter(
+      (e) => e.status === "waiting" && e.position < myEntry.position
+    ).length;
+
+    // Only notify on transitions (not on first load)
+    if (prevAheadRef.current !== null) {
+      if (prefs.has("my-turn") && aheadCount === 0 && prevAheadRef.current > 0) {
+        notify("my-turn", "轮到你了！", "前方已无人等待，请准备检查");
+      }
+
+      if (
+        prefs.has("few-ahead") &&
+        aheadCount > 0 &&
+        aheadCount <= 3 &&
+        prevAheadRef.current > 3
+      ) {
+        notify("few-ahead", "队列畅通", `前方仅 ${aheadCount} 人，请提前准备`);
+      }
+    }
+
+    prevAheadRef.current = aheadCount;
+  }, [myEntry, queue, prefs, notify]);
+
+  // Notify on status change to "checking"
+  useEffect(() => {
+    if (!myEntry) return;
+
+    if (
+      prevStatusRef.current === "waiting" &&
+      myEntry.status === "checking"
+    ) {
+      notify("checking", "开始检查", "老师正在检查你的内容，请注意");
+    }
+
+    prevStatusRef.current = myEntry.status;
+  }, [myEntry, notify]);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +113,6 @@ export default function StudentPage({
       });
       const data = await res.json();
       if (res.status === 409) {
-        // Already in queue
         setEntryId(data.entry.id);
         localStorage.setItem(`queue_entry_${code}`, data.entry.id);
         toast.info("你已在队列中");
@@ -71,6 +125,7 @@ export default function StudentPage({
       }
       setEntryId(data.id);
       localStorage.setItem(`queue_entry_${code}`, data.id);
+      resetNotified();
       toast.success(`已加入排队，序号 #${data.position}`);
       mutate();
     } catch {
@@ -124,7 +179,17 @@ export default function StudentPage({
         <QueueStatusCard stats={stats} isLoading={statsLoading} />
 
         {myEntry ? (
-          <QueuePositionCard entry={myEntry} queue={queue || []} stats={stats} />
+          <>
+            <QueuePositionCard entry={myEntry} queue={queue || []} stats={stats} />
+            {myEntry.status === "waiting" && (
+              <NotificationPrefs
+                supported={supported}
+                permission={permission}
+                prefs={prefs}
+                onToggle={togglePref}
+              />
+            )}
+          </>
         ) : (
           session.status === "active" && (
             <Card>
