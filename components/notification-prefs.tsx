@@ -28,7 +28,21 @@ export function NotificationPrefs({
   prefs: Set<NotifyPref>;
   onToggle: (pref: NotifyPref) => void;
 }) {
-  if (!supported) return null;
+  if (!supported)
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center justify-between">
+            <span>通知提醒</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            当前浏览器不支持网页通知，无法使用此功能。可以尝试更换其他浏览器。
+          </p>
+        </CardContent>
+      </Card>
+    );
 
   return (
     <Card>
